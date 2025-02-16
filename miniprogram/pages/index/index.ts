@@ -1,36 +1,63 @@
 Page({
   data: {
-    categories: ['全部', '娱乐', '餐饮', '教育', '日常'],
+    currentTheme: 'default',
+    categories: ['全部', '餐饮', '交通', '购物', '娱乐', '其他'],
     activeCategory: '全部',
-    totalExpense: 1337.5,
-    expenseCount: 6,
+    totalExpense: '1337.50',
+    expenseCount: 3,
     expenseList: [
       {
-        icon: '🍽',
+        icon: '🍜',
         category: '餐饮',
-        description: '跟同事中午去吃西餐。',
-        amount: 140,
-        time: '12:45'
+        description: '午餐面条',
+        amount: '28.50',
+        time: '12:30'
       },
       {
-        icon: '📚',
-        category: '教育',
-        description: '买编程课，投资一下自己。',
-        amount: 799,
-        time: '09:16'
+        icon: '🚌',
+        category: '交通',
+        description: '公交车',
+        amount: '2.00',
+        time: '09:15'
       },
       {
-        icon: '☕',
-        category: '餐饮',
-        description: '今日份咖啡。',
-        amount: 27,
-        time: '08:49'
+        icon: '🛍️',
+        category: '购物',
+        description: '超市日用品',
+        amount: '76.80',
+        time: '16:45'
       }
     ]
   },
 
   onLoad() {
-    // 页面加载时的逻辑
+    // 加载保存的主题设置
+    const savedTheme = wx.getStorageSync('app_theme') || 'default';
+    this.setData({ currentTheme: savedTheme });
+  },
+
+  // 切换主题
+  switchTheme() {
+    const { currentTheme } = this.data;
+    const newTheme = currentTheme === 'default' ? 'warm' : 'default';
+    
+    // 添加触感反馈
+    wx.vibrateShort({ type: 'light' });
+    
+    // 更新主题状态
+    this.setData({ 
+      currentTheme: newTheme 
+    });
+    
+    // 保存设置
+    wx.setStorageSync('app_theme', newTheme);
+    
+    // 显示切换提示
+    wx.showToast({
+      title: newTheme === 'warm' ? '已切换暖棕主题' : '已恢复默认主题',
+      icon: 'none',
+      duration: 1500
+    });
   },
 
   // 切换分类
@@ -41,17 +68,13 @@ Page({
     });
   },
 
-  // 添加新支出
+  // 添加支出
   addExpense() {
-    wx.navigateTo({
-      url: '/pages/add/add'
-    });
+    // 添加支出的逻辑
   },
 
   // 查看统计
   viewStats() {
-    wx.navigateTo({
-      url: '/pages/stats/stats'
-    });
+    // 查看统计的逻辑
   }
 }); 

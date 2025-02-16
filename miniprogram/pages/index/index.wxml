@@ -1,73 +1,80 @@
-<view class="container">
-  <!-- 标题区域 -->
-  <view class="header">
-    <view class="app-title">喵汪记账</view>
-    <view class="page-title">今日开销</view>
-  </view>
-
-  <!-- 分类标签栏 -->
-  <scroll-view scroll-x class="category-bar" enhanced show-scrollbar="{{false}}" enable-flex>
-    <view 
-      wx:for="{{categories}}" 
-      wx:key="*this"
-      class="category-item {{activeCategory === item ? 'active' : ''}}"
-      bindtap="switchCategory"
-      data-category="{{item}}"
-    >{{item}}</view>
-  </scroll-view>
-
-  <!-- 总支出卡片 -->
-  <view class="total-expense">
-    <view class="expense-left">
-      <view class="expense-icon">￥</view>
-      <view class="expense-title">共计支出</view>
+<view class="{{currentTheme === 'warm' ? 'warm-theme' : ''}}">
+  <view class="container">
+    <!-- 标题区域 -->
+    <view class="header">
+      <view class="title-row">
+        <view class="app-title">喵汪记账</view>
+        <view class="theme-switch" bindtap="switchTheme">
+          <image class="theme-icon" src="../../assets/icons/palette.png" mode="aspectFit"></image>
+        </view>
+      </view>
+      <view class="page-title">今日开销</view>
     </view>
-    <view class="expense-right">
-      <view class="expense-amount">¥ {{totalExpense}}</view>
-      <view class="expense-count">总计{{expenseCount}}笔开销</view>
-    </view>
-  </view>
 
-  <!-- 支出记录列表 -->
-  <scroll-view 
-    scroll-y 
-    class="expense-list"
-    enhanced
-    show-scrollbar="{{false}}"
-    enable-flex
-  >
-    <view class="list-title">支出记录</view>
-    
-    <!-- 单条记录 -->
-    <view 
-      class="expense-item"
-      wx:for="{{expenseList}}"
-      wx:key="time"
+    <!-- 分类标签栏 -->
+    <scroll-view scroll-x class="category-bar" enhanced show-scrollbar="{{false}}" enable-flex>
+      <view 
+        wx:for="{{categories}}" 
+        wx:key="*this"
+        class="category-item {{activeCategory === item ? 'active' : ''}}"
+        bindtap="switchCategory"
+        data-category="{{item}}"
+      >{{item}}</view>
+    </scroll-view>
+
+    <!-- 总支出卡片 -->
+    <view class="total-expense">
+      <view class="expense-left">
+        <view class="expense-icon">￥</view>
+        <view class="expense-title">共计支出</view>
+      </view>
+      <view class="expense-right">
+        <view class="expense-amount">¥ {{totalExpense}}</view>
+        <view class="expense-count">总计{{expenseCount}}笔开销</view>
+      </view>
+    </view>
+
+    <!-- 支出记录列表 -->
+    <scroll-view 
+      scroll-y 
+      class="expense-list"
+      enhanced
+      show-scrollbar="{{false}}"
+      enable-flex
     >
-      <view class="item-left">
-        <view class="item-icon">{{item.icon}}</view>
-        <view class="item-tag">{{item.category}}</view>
+      <view class="list-title">支出记录</view>
+      
+      <!-- 单条记录 -->
+      <view 
+        class="expense-item"
+        wx:for="{{expenseList}}"
+        wx:key="time"
+      >
+        <view class="item-left">
+          <view class="item-icon">{{item.icon}}</view>
+          <view class="item-tag">{{item.category}}</view>
+        </view>
+        <view class="item-center">
+          <view class="item-desc">{{item.description}}</view>
+        </view>
+        <view class="item-right">
+          <view class="item-amount">¥ {{item.amount}}</view>
+          <view class="item-time">{{item.time}}</view>
+        </view>
       </view>
-      <view class="item-center">
-        <view class="item-desc">{{item.description}}</view>
-      </view>
-      <view class="item-right">
-        <view class="item-amount">¥ {{item.amount}}</view>
-        <view class="item-time">{{item.time}}</view>
-      </view>
-    </view>
-  </scroll-view>
+    </scroll-view>
 
-  <!-- 底部导航栏 -->
-  <view class="tab-bar">
-    <view class="tab-item">
-      <image class="tab-icon" src="/assets/icons/bill.png" mode="aspectFit" />
-    </view>
-    <view class="tab-item add-btn" bindtap="addExpense">
-      <view class="add-icon"></view>
-    </view>
-    <view class="tab-item" bindtap="viewStats">
-      <image class="tab-icon" src="/assets/icons/stats.png" mode="aspectFit" />
+    <!-- 底部导航栏 -->
+    <view class="tab-bar">
+      <view class="tab-item">
+        <image class="tab-icon" src="/assets/icons/bill.png" mode="aspectFit" />
+      </view>
+      <view class="tab-item add-btn" bindtap="addExpense">
+        <view class="add-icon"></view>
+      </view>
+      <view class="tab-item" bindtap="viewStats">
+        <image class="tab-icon" src="/assets/icons/stats.png" mode="aspectFit" />
+      </view>
     </view>
   </view>
 </view> 

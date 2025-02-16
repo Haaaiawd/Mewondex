@@ -2,14 +2,36 @@
 page {
   font-family: "FZLanTingYuan-DB1-GBK", "PingFang SC", -apple-system, "Microsoft Yahei",
     sans-serif;
-  --primary-color: #9d5353;
-  --text-color: #4a4a4a;
+  
+  /* 中国古典主题（默认） */
+  --primary-color: #9D5353;
+  --text-color: #4A4A4A;
   --text-color-light: #666666;
   --text-color-lighter: #999999;
   --background-color: #f5f5f0;
   --card-color: #e9e4dc;
   --white: #ffffff;
-  --amount-color: #b94d4d;
+  --amount-color: #C04851;
+  --nav-accent-color: #9D5353;
+  --category-active-color: #8E4155;
+  --card-shadow: rgba(142, 65, 85, 0.1);
+  --expense-card-shadow: rgba(157, 83, 83, 0.15);
+}
+
+/* 日系暖棕主题 */
+.warm-theme {
+  --primary-color: #8B7355;
+  --text-color: #333333;
+  --text-color-light: #666666;
+  --text-color-lighter: #999999;
+  --background-color: #f5f5f0;
+  --card-color: #e9e4dc;
+  --white: #ffffff;
+  --amount-color: #B58F67;
+  --nav-accent-color: #8B7355;
+  --category-active-color: #B58F67;
+  --card-shadow: rgba(184, 163, 144, 0.1);
+  --expense-card-shadow: rgba(139, 115, 85, 0.15);
 }
 
 /* 隐藏滚动条 */

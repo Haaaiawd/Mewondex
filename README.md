@@ -2,7 +2,7 @@
 
 喵汪记账是一款基于微信小程序的记账应用，旨在帮助用户轻松记录每日支出，并提供统计分析与记录管理功能。本项目采用 TypeScript、WXSS 和 WXML 开发，支持主题切换和数据本地存储，用户界面设计简洁直观，操作流畅。
 
-## 项目为![0基础教你做小程序](https://github.com/Haaaiawd/Mewondex/tree/main/introduce_img)的学习成果与笔记。感兴趣可以尝试一下这个大佬的教程。
+## 项目为![0基础教你做小程序](https://raw.githubusercontent.com/Haaaiawd/Mewondex/refs/heads/main/introduce_img/0%E5%9F%BA%E7%A1%80%E5%81%9A%E4%B8%80%E6%AC%BE%E5%B0%8F%E7%A8%8B%E5%BA%8F.jpg)的学习成果与笔记。感兴趣可以尝试一下这个大佬的教程。
 
 ## 功能特点
 

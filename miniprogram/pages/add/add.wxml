@@ -1,0 +1,68 @@
+<view class="{{currentTheme === 'warm' ? 'warm-theme' : ''}}">
+  <view class="mask {{isClosing ? 'mask-exit' : 'mask-enter'}}" bindtap="closeAdd"></view>
+  <view class="add-expense {{isClosing ? 'slide-down' : 'slide-up'}}">
+    <!-- 标题和关闭按钮 -->
+    <view class="header">
+      <view class="title">新增开销记录</view>
+      <view class="close-btn" bindtap="closeAdd">
+        <view class="close-icon"></view>
+      </view>
+    </view>
+
+    <!-- 分类选择 -->
+    <view class="category-bar">
+      <view 
+        wx:for="{{categories}}" 
+        wx:key="*this"
+        class="category-item {{selectedCategory === item ? 'active' : ''}}"
+        bindtap="selectCategory"
+        data-category="{{item}}"
+      >{{item}}</view>
+    </view>
+
+    <!-- 金额输入 -->
+    <view class="input-group">
+      <view class="input-label">开销金额</view>
+      <input 
+        class="amount-input"
+        type="digit"
+        placeholder="请输入金额"
+        value="{{amount}}"
+        bindinput="onAmountInput"
+      />
+    </view>
+
+    <!-- 备注输入 -->
+    <view class="input-group">
+      <view class="input-label">备注</view>
+      <textarea 
+        class="remark-input"
+        placeholder="添加备注..."
+        value="{{remark}}"
+        bindinput="onRemarkInput"
+        maxlength="100"
+      />
+    </view>
+
+    <!-- 状态选择 -->
+    <view class="mood-section">
+      <view class="input-label">状态</view>
+      <view class="mood-grid">
+        <view 
+          wx:for="{{moods}}" 
+          wx:key="icon"
+          class="mood-item {{selectedMood === item.icon ? 'active' : ''}}"
+          bindtap="selectMood"
+          data-mood="{{item.icon}}"
+        >
+          {{item.icon}}
+        </view>
+      </view>
+    </view>
+
+    <!-- 提交按钮 -->
+    <view class="submit-btn" bindtap="submitExpense">
+      记录开销
+    </view>
+  </view>
+</view> 

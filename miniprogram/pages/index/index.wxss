@@ -297,6 +297,10 @@ page {
   transition: all 0.1s ease-in-out;
 }
 
+.tab-item.active::after {
+  pointer-events: none;
+}
+
 .tab-icon {
   width: 48rpx;
   height: 48rpx;
@@ -731,4 +735,20 @@ page {
 .dark .modify-btn {
   background-color: var(--nav-accent-color);
   color: var(--white);
+}
+
+/* 首页底部导航栏 - 左侧图标主题色高亮 */
+.tab-item:first-child.active::after {
+  content: '';
+  position: absolute;
+  width: 64rpx;
+  height: 64rpx;
+  background-color: var(--nav-accent-color);
+  border-radius: 50%;
+  z-index: -1;
+}
+.tab-item:first-child.active .tab-icon {
+  filter: brightness(0) saturate(100%) invert(100%);
+  opacity: 1;
+  z-index: 1;
 } 

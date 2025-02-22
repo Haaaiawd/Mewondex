@@ -12,5 +12,22 @@
   },
   "style": "v2",
   "componentFramework": "glass-easel",
-  "lazyCodeLoading": "requiredComponents"
+  "lazyCodeLoading": "requiredComponents",
+  "tabBar": {
+    "custom": true,
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "assets/icons/bill.png",
+        "selectedIconPath": "assets/icons/bill.png"
+      },
+      {
+        "pagePath": "pages/statistics/statistics",
+        "text": "统计",
+        "iconPath": "assets/icons/stats.png",
+        "selectedIconPath": "assets/icons/stats.png"
+      }
+    ]
+  }
 }

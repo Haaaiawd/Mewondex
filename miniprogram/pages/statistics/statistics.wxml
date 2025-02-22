@@ -9,41 +9,84 @@
         </view>
       </view>
       <view class="page-title">全部开销</view>
+      <!-- 添加周期选择器 -->
+      <view class="date-picker">
+        <view class="date-range">{{currentDateRange}}</view>
+        <view class="switch-date" bindtap="switchDateRange">切换日期</view>
+      </view>
     </view>
 
     <!-- 统计信息展示区域 -->
     <view class="stats-section">
-      <!-- 支出记录列表 -->
-      <scroll-view 
-        scroll-y 
-        class="expense-list"
-        enhanced
-        show-scrollbar="{{false}}"
-        enable-flex
-      >
-        <view class="list-title">支出记录</view>
-        
-        <!-- 单条记录 -->
-        <view 
-          class="expense-item {{currentTheme === 'dark' ? 'dark' : ''}}"
-          wx:for="{{expenseList}}"
-          wx:key="index"
-          bindtap="openRecordDetail"
-          data-index="{{index}}"
-        >
-          <view class="item-left">
-            <view class="item-icon">{{item.icon}}</view>
-            <view class="item-tag">{{item.category}}</view>
+      <!-- 总支出卡片 -->
+      <view class="total-expense">
+        <view class="expense-left">
+          <view class="expense-icon">￥</view>
+          <view class="expense-title">共计支出</view>
+        </view>
+        <view class="expense-right">
+          <view class="expense-amount">¥ {{totalExpense}}</view>
+          <view class="expense-count">本周{{expenseList.length}}笔开销</view>
+        </view>
+      </view>
+
+      <!-- 分类支出统计 -->
+      <view class="category-stats">
+        <view class="section-title">分类统计</view>
+        <view class="stats-content">
+          <view class="pie-chart-container">
+            <canvas type="2d" id="pieChart" class="pie-chart"></canvas>
           </view>
-          <view class="item-center">
-            <view class="item-desc">{{item.description}}</view>
-          </view>
-          <view class="item-right">
-            <view class="item-amount">¥ {{item.amount}}</view>
-            <view class="item-time">{{item.time}}</view>
+          <view class="category-list">
+            <view class="category-item {{index === selectedCategoryIndex ? 'selected' : ''}}" 
+                  wx:for="{{categoryExpenses}}" 
+                  wx:key="category"
+                  bindtap="highlightCategory"
+                  data-index="{{index}}">
+              <view class="category-info">
+                <view class="category-dot" style="background-color: {{item.color}}"></view>
+                <view class="category-name">{{item.category}}</view>
+              </view>
+              <view class="category-details">
+                <view class="category-amount">¥{{item.amount}}</view>
+                <view class="category-percentage">{{item.percentage}}%</view>
+              </view>
+            </view>
           </view>
         </view>
-      </scroll-view>
+      </view>
+
+      <!-- 支出记录列表 -->
+      <view class="expense-records">
+        <view class="section-title">支出记录</view>
+        <scroll-view 
+          scroll-y 
+          class="expense-list"
+          enhanced
+          show-scrollbar="{{false}}"
+          enable-flex
+        >
+          <view 
+            class="expense-item"
+            wx:for="{{expenseList}}"
+            wx:key="index"
+            bindtap="openRecordDetail"
+            data-index="{{index}}"
+          >
+            <view class="item-left">
+              <view class="item-icon">{{item.icon}}</view>
+              <view class="item-tag">{{item.category}}</view>
+            </view>
+            <view class="item-center">
+              <view class="item-desc">{{item.description}}</view>
+            </view>
+            <view class="item-right">
+              <view class="item-amount">¥ {{item.amount}}</view>
+              <view class="item-time">{{item.time}}</view>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
     </view>
 
     <!-- 底部导航栏 -->
@@ -125,7 +168,7 @@
 
       <!-- 提交按钮 -->
       <view class="popup-submit-btn" bindtap="submitExpense">
-        记录开销
+        {{addData.isModifying ? '保存修改' : '记录开销'}}
       </view>
     </view>
   </block>

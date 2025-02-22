@@ -7,173 +7,384 @@ interface ExpenseRecord {
   time: string;
 }
 
+interface CategoryExpense {
+  category: string;
+  amount: number;
+  percentage: number;
+  color: string;
+}
+
 Page({
   data: {
-    currentTheme: 'cool',
-    showAddExpense: false,
-    animatePopup: false,
-    isClosing: false,
-    expenseList: [] as any[],
-    addData: {
-      categories: ['餐饮', '购物', '交通', '娱乐', '居家', '通讯', '服饰', '医疗'],
-      selectedCategory: '',
-      amount: '',
-      remark: '',
-      moods: [
-        { icon: '😊', name: '开心' },
-        { icon: '😢', name: '难过' },
-        { icon: '😡', name: '生气' },
-        { icon: '😌', name: '放松' },
-        { icon: '🤔', name: '思考' },
-        { icon: '😴', name: '疲惫' },
-        { icon: '🥳', name: '兴奋' },
-        { icon: '😎', name: '得意' }
-      ],
-      selectedMood: ''
-    },
+    currentTheme: 'default',
+    currentDateRange: '',
+    totalExpense: '0.00',
+    categoryExpenses: [] as CategoryExpense[],
+    expenseList: [] as ExpenseRecord[],
     showRecordDetail: false,
     animateDetail: false,
     selectedExpenseIndex: -1,
-    detailExpense: null as any
+    detailExpense: null as any,
+    showAddExpense: false,
+    animatePopup: false,
+    addData: {
+      categories: ['餐饮', '交通', '购物', '娱乐', '其他'],
+      selectedCategory: '餐饮',
+      amount: '',
+      remark: '',
+      moods: [
+        { icon: '🍜', name: '用餐' },
+        { icon: '☕', name: '咖啡' },
+        { icon: '🍷', name: '酒水' },
+        { icon: '🎮', name: '游戏' },
+        { icon: '⚽', name: '运动' },
+        { icon: '🎬', name: '电影' },
+        { icon: '📚', name: '学习' },
+        { icon: '💡', name: '灵感' }
+      ],
+      selectedMood: '',
+      isModifying: false,
+      modifyIndex: -1
+    },
+    categoryColors: [
+      '#B58F67', // 暖棕色
+      '#C04851', // 玫瑰红
+      '#8B7355', // 深棕色
+      '#9D5353', // 红棕色
+      '#8E4155', // 酒红色
+    ],
+    pieChartContext: null as any,
+    selectedCategoryIndex: -1,
   },
 
   onLoad() {
     // 从本地存储读取主题设置
-    const theme = wx.getStorageSync('theme') || 'cool';
-    this.setData({ currentTheme: theme });
+    const savedTheme = wx.getStorageSync('app_theme') || 'default';
+    this.setData({ currentTheme: savedTheme });
 
     // 从本地存储读取支出记录
     const expenseList = wx.getStorageSync('expenseList') || [];
     this.setData({ expenseList });
+
+    // 初始化当前周期
+    this.initCurrentWeek();
+    // 计算统计数据
+    this.calculateStatistics();
+  },
+
+  onShow() {
+    // 同步主题
+    const savedTheme = wx.getStorageSync('app_theme') || 'default';
+    if (this.data.currentTheme !== savedTheme) {
+      this.setData({ currentTheme: savedTheme });
+    }
+    // 同步支出记录，并重新计算统计数据
+    const expenseList = wx.getStorageSync('expenseList') || [];
+    this.setData({ expenseList }, () => {
+      this.calculateStatistics();
+    });
+  },
+
+  // 初始化当前周期
+  initCurrentWeek() {
+    const now = new Date();
+    const weekStart = new Date(now.setDate(now.getDate() - now.getDay() + 1));
+    const weekEnd = new Date(now.setDate(now.getDate() - now.getDay() + 7));
+    
+    const formatDate = (date: Date) => {
+      return date.toISOString().split('T')[0];
+    };
+
+    this.setData({
+      currentDateRange: `${formatDate(weekStart)} ~ ${formatDate(weekEnd)}`
+    });
+  },
+
+  // 切换日期范围
+  switchDateRange() {
+    // 这里可以添加日期选择器的逻辑
+    wx.showToast({
+      title: '日期选择功能开发中',
+      icon: 'none'
+    });
+  },
+
+  // 计算统计数据
+  calculateStatistics() {
+    const { expenseList, categoryColors } = this.data;
+    
+    // 计算总支出
+    const total = expenseList.reduce((sum, item) => {
+      return sum + parseFloat(item.amount);
+    }, 0);
+
+    // 按分类统计支出
+    const categoryMap = new Map<string, number>();
+    expenseList.forEach(item => {
+      const current = categoryMap.get(item.category) || 0;
+      categoryMap.set(item.category, current + parseFloat(item.amount));
+    });
+
+    // 转换为数组并计算百分比
+    const categoryExpenses: CategoryExpense[] = Array.from(categoryMap.entries()).map(([category, amount], index) => ({
+      category,
+      amount,
+      percentage: Math.round((amount / total) * 100),
+      color: categoryColors[index % categoryColors.length]
+    }));
+
+    // 更新数据
+    this.setData({
+      totalExpense: total.toFixed(2),
+      categoryExpenses: categoryExpenses.sort((a, b) => b.amount - a.amount)
+    }, () => {
+      this.drawPieChart();
+    });
+  },
+
+  // 绘制饼图
+  async drawPieChart() {
+    const query = wx.createSelectorQuery();
+    const canvas = await new Promise(resolve => {
+      query.select('#pieChart')
+        .fields({ node: true, size: true })
+        .exec((res) => resolve(res[0]));
+    });
+
+    if (!canvas) return;
+
+    const ctx = canvas.node.getContext('2d');
+    const dpr = wx.getSystemInfoSync().pixelRatio;
+    canvas.node.width = canvas.width * dpr;
+    canvas.node.height = canvas.height * dpr;
+    ctx.scale(dpr, dpr);
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const radius = Math.min(centerX, centerY) * 0.8;
+
+    const { categoryExpenses, selectedCategoryIndex } = this.data;
+    let startAngle = -Math.PI / 2;
+
+    categoryExpenses.forEach((category, index) => {
+      const endAngle = startAngle + (category.percentage / 100) * Math.PI * 2;
+
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+      ctx.closePath();
+
+      // 如果是选中的分类，稍微突出显示
+      if (index === selectedCategoryIndex) {
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetX = 5;
+        ctx.shadowOffsetY = 5;
+      }
+
+      ctx.fillStyle = category.color;
+      ctx.fill();
+
+      if (index === selectedCategoryIndex) {
+        ctx.restore();
+      }
+
+      startAngle = endAngle;
+    });
+
+    // 绘制中心白色圆形
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius * 0.6, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.fill();
+  },
+
+  // 高亮显示分类
+  highlightCategory(e: any) {
+    const index = e.currentTarget.dataset.index;
+    this.setData({ selectedCategoryIndex: index }, () => {
+      this.drawPieChart();
+    });
   },
 
   // 切换主题
   switchTheme() {
-    const newTheme = this.data.currentTheme === 'cool' ? 'warm' : 'cool';
-    this.setData({ currentTheme: newTheme });
-    wx.setStorageSync('theme', newTheme);
+    const { currentTheme } = this.data;
+    const newTheme = currentTheme === 'default' ? 'warm' : 'default';
+    
+    // 添加触感反馈
+    wx.vibrateShort({ type: 'light' });
+    
+    // 更新主题状态
+    this.setData({ 
+      currentTheme: newTheme 
+    });
+    
+    // 保存设置到全局存储
+    wx.setStorageSync('app_theme', newTheme);
+    
+    // 显示切换提示
+    wx.showToast({
+      title: newTheme === 'warm' ? '已切换暖棕主题' : '已恢复默认主题',
+      icon: 'none',
+      duration: 1500
+    });
   },
 
   // 返回首页
   goToIndex() {
-    wx.navigateBack();
+    wx.vibrateShort({ type: 'light' });
+    wx.switchTab({
+      url: '/pages/index/index'
+    });
   },
 
-  // 打开添加支出弹窗
+  // 打开新增支出记录弹窗（直接在统计页面打开）
   addExpense() {
+    console.log('统计页面 addExpense triggered');
+    wx.vibrateShort({ type: 'light' });
+    
+    // 先重置状态
     this.setData({
-      showAddExpense: true,
-      isClosing: false,
-      'addData.selectedCategory': '',
-      'addData.amount': '',
-      'addData.remark': '',
-      'addData.selectedMood': ''
+      showAddExpense: false,
+      animatePopup: false
     }, () => {
+      // 延迟显示弹窗，确保状态重置
       setTimeout(() => {
-        this.setData({ animatePopup: true });
+        this.setData({
+          showAddExpense: true,
+          'addData.selectedCategory': '餐饮',
+          'addData.amount': '',
+          'addData.remark': '',
+          'addData.selectedMood': ''
+        }, () => {
+          // 确保弹窗显示后再添加动画
+          setTimeout(() => {
+            console.log('准备设置动画状态');
+            this.setData({ 
+              animatePopup: true 
+            }, () => {
+              console.log('动画状态已设置');
+            });
+          }, 50);
+        });
       }, 50);
     });
   },
 
-  // 关闭添加支出弹窗
+  // 关闭新增支出记录弹窗
   closeAdd() {
-    this.setData({
+    this.setData({ 
       animatePopup: false,
-      isClosing: true
+      'addData.isModifying': false,
+      'addData.modifyIndex': -1
     });
     setTimeout(() => {
-      this.setData({
-        showAddExpense: false,
-        isClosing: false
-      });
+      this.setData({ showAddExpense: false });
     }, 300);
   },
 
-  // 选择支出分类
+  // 选择分类
   selectCategory(e: any) {
     const category = e.currentTarget.dataset.category;
-    this.setData({
-      'addData.selectedCategory': category
-    });
+    this.setData({ 'addData.selectedCategory': category });
   },
 
-  // 输入金额
+  // 金额输入
   onAmountInput(e: any) {
     let value = e.detail.value;
-    // 限制只能输入数字和小数点
     value = value.replace(/[^\d.]/g, '');
-    // 限制只能有一个小数点
-    const parts = value.split('.');
-    if (parts.length > 2) {
-      value = parts[0] + '.' + parts.slice(1).join('');
+    const dotIndex = value.indexOf('.');
+    if (dotIndex !== -1) {
+      const dotCount = value.split('.').length - 1;
+      if (dotCount > 1) {
+        value = value.substring(0, value.lastIndexOf('.'));
+      }
+      const decimal = value.substring(dotIndex + 1);
+      if (decimal.length > 2) {
+        value = value.substring(0, dotIndex + 3);
+      }
     }
-    // 限制小数点后最多两位
-    if (parts.length === 2 && parts[1].length > 2) {
-      value = parts[0] + '.' + parts[1].slice(0, 2);
-    }
-    this.setData({
-      'addData.amount': value
-    });
+    this.setData({ 'addData.amount': value });
   },
 
-  // 输入备注
+  // 备注输入
   onRemarkInput(e: any) {
-    this.setData({
-      'addData.remark': e.detail.value
-    });
+    this.setData({ 'addData.remark': e.detail.value });
   },
 
   // 选择心情
   selectMood(e: any) {
     const mood = e.currentTarget.dataset.mood;
-    this.setData({
-      'addData.selectedMood': mood
-    });
+    this.setData({ 'addData.selectedMood': mood });
   },
 
   // 提交支出记录
   submitExpense() {
-    const { selectedCategory, amount, remark, selectedMood } = this.data.addData;
-    
+    const { selectedCategory, amount, remark, selectedMood, isModifying, modifyIndex } = this.data.addData;
     if (!selectedCategory) {
-      wx.showToast({
-        title: '请选择支出分类',
-        icon: 'none'
-      });
+      wx.showToast({ title: '请选择分类', icon: 'none' });
       return;
     }
-    
     if (!amount) {
-      wx.showToast({
-        title: '请输入支出金额',
-        icon: 'none'
-      });
+      wx.showToast({ title: '请输入金额', icon: 'none' });
       return;
     }
 
-    const newExpense = {
+    const newExpense: ExpenseRecord = {
       category: selectedCategory,
       amount: parseFloat(amount).toFixed(2),
       description: remark || '未添加备注',
-      icon: selectedMood || '🤔',
-      time: new Date().toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+      icon: selectedMood || this.getCategoryIcon(selectedCategory),
+      time: isModifying ? this.data.expenseList[modifyIndex].time : this.getCurrentTime()
     };
 
-    const expenseList = [newExpense, ...this.data.expenseList];
-    this.setData({ expenseList });
-    wx.setStorageSync('expenseList', expenseList);
+    let expenseList = [...this.data.expenseList];
+    
+    if (isModifying) {
+      // 修改现有记录
+      expenseList[modifyIndex] = newExpense;
+    } else {
+      // 添加新记录
+      expenseList = [newExpense, ...expenseList];
+    }
 
-    this.closeAdd();
-    wx.showToast({
-      title: '记录成功',
-      icon: 'success'
+    this.setData({ 
+      expenseList,
+      'addData.isModifying': false,
+      'addData.modifyIndex': -1
     });
+    
+    wx.setStorageSync('expenseList', expenseList);
+    this.calculateStatistics();
+    this.closeAdd();
+    
+    wx.showToast({ 
+      title: isModifying ? '修改成功' : '记录成功', 
+      icon: 'success', 
+      duration: 1500 
+    });
+  },
+
+  // 获取分类对应默认图标
+  getCategoryIcon(category: string): string {
+    const iconMap: { [key: string]: string } = {
+      '娱乐': '🎮',
+      '餐饮': '🍜',
+      '交通': '🚗',
+      '购物': '🛍️',
+      '其他': '📝'
+    };
+    return iconMap[category] || '💰';
+  },
+
+  // 获取当前时间
+  getCurrentTime(): string {
+    const now = new Date();
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
   },
 
   // 打开记录详情
@@ -207,25 +418,33 @@ Page({
   // 修改记录
   modifyRecord() {
     const expense = this.data.detailExpense;
+    const index = this.data.selectedExpenseIndex;
+    
+    // 先关闭详情弹窗
     this.setData({
-      showRecordDetail: false,
-      showAddExpense: true,
-      isClosing: false,
-      'addData.selectedCategory': expense.category,
-      'addData.amount': expense.amount,
-      'addData.remark': expense.description === '未添加备注' ? '' : expense.description,
-      'addData.selectedMood': expense.icon
-    }, () => {
-      setTimeout(() => {
-        this.setData({ animatePopup: true });
-      }, 50);
+      animateDetail: false
     });
-
-    // 删除原记录
-    const expenseList = this.data.expenseList;
-    expenseList.splice(this.data.selectedExpenseIndex, 1);
-    this.setData({ expenseList });
-    wx.setStorageSync('expenseList', expenseList);
+    
+    setTimeout(() => {
+      this.setData({
+        showRecordDetail: false,
+        selectedExpenseIndex: -1,
+        detailExpense: null,
+        // 打开修改弹窗
+        showAddExpense: true,
+        animatePopup: false,
+        'addData.selectedCategory': expense.category,
+        'addData.amount': expense.amount,
+        'addData.remark': expense.description === '未添加备注' ? '' : expense.description,
+        'addData.selectedMood': expense.icon,
+        'addData.isModifying': true,
+        'addData.modifyIndex': index
+      }, () => {
+        setTimeout(() => {
+          this.setData({ animatePopup: true });
+        }, 50);
+      });
+    }, 300);
   },
 
   // 删除记录
@@ -241,6 +460,10 @@ Page({
           expenseList.splice(this.data.selectedExpenseIndex, 1);
           this.setData({ expenseList });
           wx.setStorageSync('expenseList', expenseList);
+          
+          // 重新计算统计数据
+          this.calculateStatistics();
+          
           this.closeRecordDetail();
           wx.showToast({
             title: '删除成功',

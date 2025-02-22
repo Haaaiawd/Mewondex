@@ -56,6 +56,22 @@ Page({
     });
   },
 
+  onShow() {
+    // 同步主题
+    const savedTheme = wx.getStorageSync('app_theme') || 'default';
+    if (this.data.currentTheme !== savedTheme) {
+      this.setData({ currentTheme: savedTheme });
+    }
+    // 同步支出记录，并重新计算总支出和记录数
+    const savedExpenseList = wx.getStorageSync('expenseList') || [];
+    const totalExpense = savedExpenseList.reduce((sum: number, item: ExpenseRecord) => sum + parseFloat(item.amount), 0).toFixed(2);
+    this.setData({
+      expenseList: savedExpenseList,
+      expenseCount: savedExpenseList.length,
+      totalExpense
+    });
+  },
+
   // 切换主题
   switchTheme() {
     const { currentTheme } = this.data;
@@ -69,7 +85,7 @@ Page({
       currentTheme: newTheme 
     });
     
-    // 保存设置
+    // 保存设置到全局存储
     wx.setStorageSync('app_theme', newTheme);
     
     // 显示切换提示
@@ -351,7 +367,8 @@ Page({
 
   // 跳转到统计页面
   goToStats() {
-    wx.navigateTo({
+    wx.vibrateShort({ type: 'light' });
+    wx.switchTab({
       url: '/pages/statistics/statistics'
     });
   },

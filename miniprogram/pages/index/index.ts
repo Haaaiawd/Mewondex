@@ -70,6 +70,12 @@ Page({
       expenseCount: savedExpenseList.length,
       totalExpense
     });
+
+    // 滚动到顶部
+    wx.pageScrollTo({
+      scrollTop: 0,
+      duration: 300
+    });
   },
 
   // 切换主题

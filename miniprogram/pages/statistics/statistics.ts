@@ -24,7 +24,7 @@ Page({
     showRecordDetail: false,
     animateDetail: false,
     selectedExpenseIndex: -1,
-    detailExpense: null as any,
+    detailExpense: null as ExpenseRecord | null,
     showAddExpense: false,
     animatePopup: false,
     addData: {
@@ -53,7 +53,7 @@ Page({
       '#9D5353', // 红棕色
       '#8E4155', // 酒红色
     ],
-    pieChartContext: null as any,
+    pieChartContext: null as WechatMiniprogram.CanvasContext | null,
     selectedCategoryIndex: -1,
   },
 
@@ -82,6 +82,12 @@ Page({
     const expenseList = wx.getStorageSync('expenseList') || [];
     this.setData({ expenseList }, () => {
       this.calculateStatistics();
+    });
+
+    // 滚动到顶部
+    wx.pageScrollTo({
+      scrollTop: 0,
+      duration: 300
     });
   },
 
@@ -115,14 +121,14 @@ Page({
     
     // 计算总支出
     const total = expenseList.reduce((sum, item) => {
-      return sum + parseFloat(item.amount);
+      return sum + Number(item.amount);
     }, 0);
 
     // 按分类统计支出
     const categoryMap = new Map<string, number>();
     expenseList.forEach(item => {
       const current = categoryMap.get(item.category) || 0;
-      categoryMap.set(item.category, current + parseFloat(item.amount));
+      categoryMap.set(item.category, current + Number(item.amount));
     });
 
     // 转换为数组并计算百分比
@@ -143,61 +149,74 @@ Page({
   },
 
   // 绘制饼图
-  async drawPieChart() {
-    const query = wx.createSelectorQuery();
-    const canvas = await new Promise(resolve => {
+  drawPieChart() {
+    try {
+      const query = wx.createSelectorQuery();
       query.select('#pieChart')
         .fields({ node: true, size: true })
-        .exec((res) => resolve(res[0]));
-    });
+        .exec((res) => {
+          if (!res[0]) {
+            console.error('Failed to get canvas node');
+            return;
+          }
 
-    if (!canvas) return;
+          const canvas = res[0].node;
+          const ctx = canvas.getContext('2d');
+          const { categoryExpenses, selectedCategoryIndex } = this.data;
+          
+          console.log('Drawing pie chart, categoryExpenses:', categoryExpenses);
+          
+          // 设置canvas尺寸
+          const width = res[0].width;
+          const height = res[0].height;
+          canvas.width = width;
+          canvas.height = height;
+          
+          const centerX = width / 2;
+          const centerY = height / 2;
+          const radius = Math.min(centerX, centerY) * 0.8;
 
-    const ctx = canvas.node.getContext('2d');
-    const dpr = wx.getSystemInfoSync().pixelRatio;
-    canvas.node.width = canvas.width * dpr;
-    canvas.node.height = canvas.height * dpr;
-    ctx.scale(dpr, dpr);
+          let startAngle = -Math.PI / 2;
 
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    const radius = Math.min(centerX, centerY) * 0.8;
+          // 清空画布
+          ctx.clearRect(0, 0, width, height);
 
-    const { categoryExpenses, selectedCategoryIndex } = this.data;
-    let startAngle = -Math.PI / 2;
+          categoryExpenses.forEach((category, index) => {
+            const endAngle = startAngle + (category.percentage / 100) * Math.PI * 2;
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+            ctx.closePath();
 
-    categoryExpenses.forEach((category, index) => {
-      const endAngle = startAngle + (category.percentage / 100) * Math.PI * 2;
+            if (index === selectedCategoryIndex) {
+              ctx.shadowBlur = 10;
+              ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+              ctx.shadowOffsetX = 5;
+              ctx.shadowOffsetY = 5;
+            }
 
-      ctx.beginPath();
-      ctx.moveTo(centerX, centerY);
-      ctx.arc(centerX, centerY, radius, startAngle, endAngle);
-      ctx.closePath();
+            ctx.fillStyle = category.color;
+            ctx.fill();
 
-      // 如果是选中的分类，稍微突出显示
-      if (index === selectedCategoryIndex) {
-        ctx.save();
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
-        ctx.shadowBlur = 10;
-        ctx.shadowOffsetX = 5;
-        ctx.shadowOffsetY = 5;
-      }
+            if (index === selectedCategoryIndex) {
+              ctx.shadowBlur = 0;
+              ctx.shadowColor = 'transparent';
+              ctx.shadowOffsetX = 0;
+              ctx.shadowOffsetY = 0;
+            }
 
-      ctx.fillStyle = category.color;
-      ctx.fill();
+            startAngle = endAngle;
+          });
 
-      if (index === selectedCategoryIndex) {
-        ctx.restore();
-      }
-
-      startAngle = endAngle;
-    });
-
-    // 绘制中心白色圆形
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, radius * 0.6, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.fill();
+          // 绘制中心白色圆形
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, radius * 0.6, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+          ctx.fill();
+        });
+    } catch (error) {
+      console.error('绘制饼图失败:', error);
+    }
   },
 
   // 高亮显示分类
@@ -334,7 +353,7 @@ Page({
 
     const newExpense: ExpenseRecord = {
       category: selectedCategory,
-      amount: parseFloat(amount).toFixed(2),
+      amount: Number(amount).toFixed(2),  // 转换为number后再转为固定小数位的string
       description: remark || '未添加备注',
       icon: selectedMood || this.getCategoryIcon(selectedCategory),
       time: isModifying ? this.data.expenseList[modifyIndex].time : this.getCurrentTime()
@@ -420,6 +439,8 @@ Page({
     const expense = this.data.detailExpense;
     const index = this.data.selectedExpenseIndex;
     
+    if (!expense) return;  // 添加null检查
+    
     // 先关闭详情弹窗
     this.setData({
       animateDetail: false
@@ -476,5 +497,26 @@ Page({
 
   stopPropagation() {
     // 阻止事件冒泡
-  }
+  },
+
+  // 添加 onReady 方法
+  onReady() {
+    // 如果没有支出记录，添加一条测试数据
+    if (this.data.expenseList.length === 0) {
+      this.setData({
+        expenseList: [{
+          category: '测试',
+          amount: '100.00',
+          description: '测试数据',
+          icon: '💰',
+          time: '12:00'
+        }]
+      }, () => {
+        console.log('Test expense data inserted');
+        this.calculateStatistics();
+      });
+    } else {
+      this.drawPieChart();
+    }
+  },
 }); 
